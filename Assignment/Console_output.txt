@@ -1,0 +1,1000 @@
+> predict(model_after,OD_valid,interval = "prediction")
+        fit      lwr      upr
+1  91.91949 90.97619 92.86279
+2  92.17013 91.22213 93.11812
+3  92.38758 91.42801 93.34716
+4  92.47017 91.50452 93.43583
+5  92.99129 91.96045 94.02214
+6  92.45072 91.48483 93.41661
+7  92.46427 91.50071 93.42783
+8  92.95635 91.94787 93.96483
+9  91.83914 90.89628 92.78200
+10 91.14946 90.19233 92.10660
+11 90.66090 89.60228 91.71953
+12 91.01531 89.97242 92.05820
+13 91.28728 90.32586 92.24870
+14 91.84778 90.88085 92.81471
+15 91.91001 90.94306 92.87695
+16 91.90443 90.94086 92.86800
+17 90.30362 89.22360 91.38363
+18 90.28841 89.14568 91.43115
+19 92.18927 91.20861 93.16993
+20 91.60289 90.63555 92.57023
+21 91.78355 90.77707 92.79004
+22 91.21291 90.21847 92.20736
+23 90.69547 89.69430 91.69664
+24 90.14142 88.95704 91.32581
+25 90.54949 89.57809 91.52089
+26 90.83844 89.84781 91.82907
+27 90.10352 89.08020 91.12685
+28 90.29484 89.29516 91.29452
+29 95.24679 93.91551 96.57807
+30 94.49682 93.18307 95.81058
+31 96.03142 94.61511 97.44772
+32 91.07293 90.11011 92.03574
+33 90.98325 89.95323 92.01326
+> 
+> 
+> #========================================================================================================================
+> 
+> ##--multicollinearity___ploting trace plot to find a min MSE at a K
+> 
+> 
+> 
+> OD1 <- All_final1[,c(1:4)]
+> cor(OD1)
+           A1         A2         A3         A4
+A1  1.0000000 -0.4412286 -0.3683774  0.1779973
+A2 -0.4412286  1.0000000  0.1791058 -0.1081762
+A3 -0.3683774  0.1791058  1.0000000 -0.4925578
+A4  0.1779973 -0.1081762 -0.4925578  1.0000000
+> 
+> # AS the cor is symmetric matrix and there is no value whose corelation is greater than 0.5(except diagonal) which says that there is no multicollinearlity
+> # in the data 
+> 
+> library(lmridge)
+> 
+> mod <- lmridge(y~ A1 + A2 + A3 + A4,data=All_final, K=seq(0,0.05,0.005))
+> vif(mod)
+             A1      A2      A3      A4
+k=0     1.39694 1.37563 1.84938 1.84008
+k=0.005 1.37190 1.35179 1.80032 1.79153
+k=0.01  1.34762 1.32865 1.75341 1.74511
+k=0.015 1.32407 1.30617 1.70853 1.70068
+k=0.02  1.30123 1.28433 1.66555 1.65814
+k=0.025 1.27905 1.26310 1.62438 1.61736
+k=0.03  1.25753 1.24246 1.58490 1.57827
+k=0.035 1.23661 1.22239 1.54702 1.54075
+k=0.04  1.21630 1.20287 1.51066 1.50473
+k=0.045 1.19655 1.18387 1.47572 1.47011
+k=0.05  1.17734 1.16537 1.44215 1.43684
+> plot(mod,type="ridge")
+> 
+> plot(mod,type="vif")
+> 
+> 
+> 
+> ##----------Weighted least squares-----------------------------------------------
+> 
+> 
+> 
+> IX<-as.matrix(All_final1)
+> 
+> Iy<-IX[,5]
+> 
+> Ix1<-IX[,1]
+> Ix2<-IX[,2]
+> Ix3<-IX[,3]
+> Ix4<-IX[,4]
+> 
+> # weighted 
+> xw<-1/Ix1
+> modwet<-lm(Iy~Ix1+Ix2+Ix3+Ix4, weights = xw)
+> 
+> summary(modwet)
+
+Call:
+lm(formula = Iy ~ Ix1 + Ix2 + Ix3 + Ix4, weights = xw)
+
+Weighted Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.118448 -0.033767  0.002054  0.033841  0.130549 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 96.58806    2.54447  37.960  < 2e-16 ***
+Ix1         -0.11169    0.01292  -8.647  4.2e-10 ***
+Ix2         -0.13639    0.08717  -1.565 0.126914    
+Ix3         -0.03105    0.02851  -1.089 0.283713    
+Ix4          2.44795    0.59731   4.098 0.000244 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.05802 on 34 degrees of freedom
+Multiple R-squared:  0.7387,	Adjusted R-squared:  0.7079 
+F-statistic: 24.03 on 4 and 34 DF,  p-value: 1.676e-09
+
+> res1<-residuals(modwet)
+> py1<-predict(modwet)
+> plot(py1,res1)
+> 
+> 
+> #this is actually enough as you can see from the residual plot.
+> # AS the residuals are scattered around 0
+> 
+> 
+> #but still trying out weighted square
+> 
+> 
+> wts1 <- 1/fitted(lm(abs(residuals(model_after)) ~ fitted(model_after)))^2
+> 
+> Wmod<-lm(Iy~Ix1+Ix2+Ix3+Ix4, weights = wts1)
+> summary(Wmod)
+
+Call:
+lm(formula = Iy ~ Ix1 + Ix2 + Ix3 + Ix4, weights = wts1)
+
+Weighted Residuals:
+     Min       1Q   Median       3Q      Max 
+-2.58885 -0.76556  0.03058  0.73738  2.90177 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 96.66148    2.51342  38.458  < 2e-16 ***
+Ix1         -0.11159    0.01280  -8.718 3.46e-10 ***
+Ix2         -0.13293    0.08625  -1.541 0.132529    
+Ix3         -0.03271    0.02809  -1.165 0.252318    
+Ix4          2.45488    0.59451   4.129 0.000223 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 1.277 on 34 degrees of freedom
+Multiple R-squared:  0.741,	Adjusted R-squared:  0.7105 
+F-statistic: 24.32 on 4 and 34 DF,  p-value: 1.444e-09
+
+> wres2<-rstudent(Wmod)
+> wfy<-fitted(Wmod)
+> plot(wfy,wres2)
+> 
+> # the output shows a small difference in the residuals vs fitted plot
+> 
+> #I couldn't find the library for boxcox function 
+> 
+> 
+> 
+> library("geoR")
+'RandomFieldsUtils' will use OMP
+'RandomFields' will use OMP
+--------------------------------------------------------------
+ Analysis of Geostatistical Data
+ For an Introduction to geoR go to http://www.leg.ufpr.br/geoR
+ geoR version 1.8-1 (built on 2020-02-08) is now loaded
+--------------------------------------------------------------
+
+> library('MASS')
+> library('car')
+Loading required package: carData
+
+Attaching package: ‘car’
+
+The following object is masked from ‘package:lmridge’:
+
+    vif
+
+> 
+> #Box_cox Transformation
+> lambda<-boxCox(Iy~Ix1+Ix2+Ix3+Ix4, family="yjPower", plotit = TRUE)
+> ind<-which(lambda$y == max(lambda$y))
+> lambda.max<-lambda$x[ind]
+> Iy.tr<-bcPower(Iy, lambda = lambda.max)
+> modt<-lm(Iy.tr~Ix1+Ix2+Ix3+Ix4)
+> summary(modt)
+
+Call:
+lm(formula = Iy.tr ~ Ix1 + Ix2 + Ix3 + Ix4)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-82.473 -25.944   0.149  24.400  94.344 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 4679.787    231.745  20.194  < 2e-16 ***
+Ix1          -10.438      1.188  -8.783  2.9e-10 ***
+Ix2          -13.575      7.952  -1.707  0.09694 .  
+Ix3           -3.096      2.592  -1.194  0.24070    
+Ix4          224.751     53.462   4.204  0.00018 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 41.49 on 34 degrees of freedom
+Multiple R-squared:  0.7463,	Adjusted R-squared:  0.7165 
+F-statistic:    25 on 4 and 34 DF,  p-value: 1.023e-09
+
+> rest<-residuals(modt)
+> pyt<-predict(modt)
+> plot(pyt,rest)
+> 
+> # in boxcox the residuals are scattered but their residuals is very large 
+> 
+> #----------------------------------------------------------------------------------------------------------------
+> 
+> 
+> 
+> library(olsrr) 
+
+Attaching package: ‘olsrr’
+
+The following object is masked from ‘package:MASS’:
+
+    cement
+
+The following object is masked from ‘package:datasets’:
+
+    rivers
+
+> 
+> 
+> ols_step_all_possible(model1)
+   Index N  Predictors  R-Square Adj. R-Square Mallow's Cp
+1      1 1          A1 0.8137648     0.8098023   62.841679
+4      2 1          A4 0.4873652     0.4764581  251.847176
+3      3 1          A3 0.4462027     0.4344198  275.682813
+2      4 1          A2 0.3212928     0.3068522  348.013386
+7      5 2       A1 A4 0.9137622     0.9100128    6.936982
+6      6 2       A1 A3 0.8743617     0.8688992   29.752311
+5      7 2       A1 A2 0.8244130     0.8167787   58.675739
+9      8 2       A2 A4 0.6281158     0.6119469  172.343919
+8      9 2       A2 A3 0.5681570     0.5493812  207.063752
+10    10 2       A3 A4 0.5352396     0.5150326  226.124947
+12    11 3    A1 A2 A4 0.9215894     0.9163620    4.404566
+13    12 3    A1 A3 A4 0.9157705     0.9101552    7.774066
+11    13 3    A1 A2 A3 0.8852630     0.8776139   25.439801
+14    14 3    A2 A3 A4 0.6479634     0.6244943  162.850899
+15    15 4 A1 A2 A3 A4 0.9240150     0.9171073    5.000000
+> 
+> ols_step_forward_p(model1,prem = 0.05)
+
+                            Selection Summary                             
+-------------------------------------------------------------------------
+        Variable                  Adj.                                       
+Step    Entered     R-Square    R-Square     C(p)        AIC        RMSE     
+-------------------------------------------------------------------------
+   1    A1            0.8138      0.8098    62.8417    103.1421    0.6657    
+   2    A4            0.9138      0.9100     6.9370     67.4169    0.4579    
+   3    A2            0.9216      0.9164     4.4046     64.7546    0.4415    
+   4    A3            0.9240      0.9171     5.0000     65.2149    0.4395    
+-------------------------------------------------------------------------
+> 
+> ols_step_backward_p(model1,prem = 0.05)
+
+
+                          Elimination Summary                           
+-----------------------------------------------------------------------
+        Variable                  Adj.                                     
+Step    Removed     R-Square    R-Square     C(p)       AIC       RMSE     
+-----------------------------------------------------------------------
+   1    A3            0.9216      0.9164    4.4046    64.7546    0.4415    
+-----------------------------------------------------------------------
+> 
+> ols_step_both_p(model1, details = TRUE)
+Stepwise Selection Method   
+---------------------------
+
+Candidate Terms: 
+
+1. A1 
+2. A2 
+3. A3 
+4. A4 
+
+We are selecting variables based on p value...
+
+
+Stepwise Selection: Step 1 
+
++ A1 
+
+                        Model Summary                         
+-------------------------------------------------------------
+R                       0.902       RMSE               0.666 
+R-Squared               0.814       Coef. Var          0.724 
+Adj. R-Squared          0.810       MSE                0.443 
+Pred R-Squared          0.801       MAE                0.507 
+-------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+
+                               ANOVA                                 
+--------------------------------------------------------------------
+               Sum of                                               
+              Squares        DF    Mean Square       F         Sig. 
+--------------------------------------------------------------------
+Regression     91.022         1         91.022    205.369    0.0000 
+Residual       20.831        47          0.443                      
+Total         111.852        48                                     
+--------------------------------------------------------------------
+
+                                   Parameter Estimates                                    
+-----------------------------------------------------------------------------------------
+      model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
+-----------------------------------------------------------------------------------------
+(Intercept)    98.036         0.438                 223.615    0.000    97.154    98.918 
+         A1    -0.102         0.007       -0.902    -14.331    0.000    -0.117    -0.088 
+-----------------------------------------------------------------------------------------
+
+
+
+Stepwise Selection: Step 2 
+
++ A4 
+
+                        Model Summary                         
+-------------------------------------------------------------
+R                       0.956       RMSE               0.458 
+R-Squared               0.914       Coef. Var          0.498 
+Adj. R-Squared          0.910       MSE                0.210 
+Pred R-Squared          0.903       MAE                0.363 
+-------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+
+                               ANOVA                                 
+--------------------------------------------------------------------
+               Sum of                                               
+              Squares        DF    Mean Square       F         Sig. 
+--------------------------------------------------------------------
+Regression    102.207         2         51.103    243.705    0.0000 
+Residual        9.646        46          0.210                      
+Total         111.852        48                                     
+--------------------------------------------------------------------
+
+                                   Parameter Estimates                                    
+-----------------------------------------------------------------------------------------
+      model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
+-----------------------------------------------------------------------------------------
+(Intercept)    92.797         0.778                 119.262    0.000    91.231    94.364 
+         A1    -0.084         0.006       -0.737    -15.081    0.000    -0.095    -0.072 
+         A4     2.517         0.345        0.357      7.303    0.000     1.824     3.211 
+-----------------------------------------------------------------------------------------
+
+
+
+                        Model Summary                         
+-------------------------------------------------------------
+R                       0.956       RMSE               0.458 
+R-Squared               0.914       Coef. Var          0.498 
+Adj. R-Squared          0.910       MSE                0.210 
+Pred R-Squared          0.903       MAE                0.363 
+-------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+
+                               ANOVA                                 
+--------------------------------------------------------------------
+               Sum of                                               
+              Squares        DF    Mean Square       F         Sig. 
+--------------------------------------------------------------------
+Regression    102.207         2         51.103    243.705    0.0000 
+Residual        9.646        46          0.210                      
+Total         111.852        48                                     
+--------------------------------------------------------------------
+
+                                   Parameter Estimates                                    
+-----------------------------------------------------------------------------------------
+      model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
+-----------------------------------------------------------------------------------------
+(Intercept)    92.797         0.778                 119.262    0.000    91.231    94.364 
+         A1    -0.084         0.006       -0.737    -15.081    0.000    -0.095    -0.072 
+         A4     2.517         0.345        0.357      7.303    0.000     1.824     3.211 
+-----------------------------------------------------------------------------------------
+
+
+
+Stepwise Selection: Step 3 
+
++ A2 
+
+                        Model Summary                         
+-------------------------------------------------------------
+R                       0.960       RMSE               0.441 
+R-Squared               0.922       Coef. Var          0.480 
+Adj. R-Squared          0.916       MSE                0.195 
+Pred R-Squared          0.911       MAE                0.347 
+-------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+
+                               ANOVA                                 
+--------------------------------------------------------------------
+               Sum of                                               
+              Squares        DF    Mean Square       F         Sig. 
+--------------------------------------------------------------------
+Regression    103.082         3         34.361    176.301    0.0000 
+Residual        8.770        45          0.195                      
+Total         111.852        48                                     
+--------------------------------------------------------------------
+
+                                   Parameter Estimates                                    
+-----------------------------------------------------------------------------------------
+      model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
+-----------------------------------------------------------------------------------------
+(Intercept)    93.627         0.846                 110.652    0.000    91.923    95.331 
+         A1    -0.094         0.007       -0.828    -12.978    0.000    -0.108    -0.079 
+         A4     2.484         0.333        0.352      7.468    0.000     1.814     3.154 
+         A2    -0.091         0.043       -0.126     -2.119    0.040    -0.177    -0.005 
+-----------------------------------------------------------------------------------------
+
+
+
+                        Model Summary                         
+-------------------------------------------------------------
+R                       0.960       RMSE               0.441 
+R-Squared               0.922       Coef. Var          0.480 
+Adj. R-Squared          0.916       MSE                0.195 
+Pred R-Squared          0.911       MAE                0.347 
+-------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+
+                               ANOVA                                 
+--------------------------------------------------------------------
+               Sum of                                               
+              Squares        DF    Mean Square       F         Sig. 
+--------------------------------------------------------------------
+Regression    103.082         3         34.361    176.301    0.0000 
+Residual        8.770        45          0.195                      
+Total         111.852        48                                     
+--------------------------------------------------------------------
+
+                                   Parameter Estimates                                    
+-----------------------------------------------------------------------------------------
+      model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
+-----------------------------------------------------------------------------------------
+(Intercept)    93.627         0.846                 110.652    0.000    91.923    95.331 
+         A1    -0.094         0.007       -0.828    -12.978    0.000    -0.108    -0.079 
+         A4     2.484         0.333        0.352      7.468    0.000     1.814     3.154 
+         A2    -0.091         0.043       -0.126     -2.119    0.040    -0.177    -0.005 
+-----------------------------------------------------------------------------------------
+
+
+
+No more variables to be added/removed.
+
+
+Final Model Output 
+------------------
+
+                        Model Summary                         
+-------------------------------------------------------------
+R                       0.960       RMSE               0.441 
+R-Squared               0.922       Coef. Var          0.480 
+Adj. R-Squared          0.916       MSE                0.195 
+Pred R-Squared          0.911       MAE                0.347 
+-------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+
+                               ANOVA                                 
+--------------------------------------------------------------------
+               Sum of                                               
+              Squares        DF    Mean Square       F         Sig. 
+--------------------------------------------------------------------
+Regression    103.082         3         34.361    176.301    0.0000 
+Residual        8.770        45          0.195                      
+Total         111.852        48                                     
+--------------------------------------------------------------------
+
+                                   Parameter Estimates                                    
+-----------------------------------------------------------------------------------------
+      model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
+-----------------------------------------------------------------------------------------
+(Intercept)    93.627         0.846                 110.652    0.000    91.923    95.331 
+         A1    -0.094         0.007       -0.828    -12.978    0.000    -0.108    -0.079 
+         A4     2.484         0.333        0.352      7.468    0.000     1.814     3.154 
+         A2    -0.091         0.043       -0.126     -2.119    0.040    -0.177    -0.005 
+-----------------------------------------------------------------------------------------
+
+                             Stepwise Selection Summary                               
+-------------------------------------------------------------------------------------
+                     Added/                   Adj.                                       
+Step    Variable    Removed     R-Square    R-Square     C(p)        AIC        RMSE     
+-------------------------------------------------------------------------------------
+   1       A1       addition       0.814       0.810    62.8420    103.1421    0.6657    
+   2       A4       addition       0.914       0.910     6.9370     67.4169    0.4579    
+   3       A2       addition       0.922       0.916     4.4050     64.7546    0.4415    
+-------------------------------------------------------------------------------------
+> 
+> 
+> ols_step_backward_aic(model1,details = TRUE)
+Backward Elimination Method 
+---------------------------
+
+Candidate Terms: 
+
+1 . A1 
+2 . A2 
+3 . A3 
+4 . A4 
+
+ Step 0: AIC = 65.21486 
+ y ~ A1 + A2 + A3 + A4 
+
+--------------------------------------------------------------------
+Variable     DF      AIC      Sum Sq     RSS      R-Sq     Adj. R-Sq 
+--------------------------------------------------------------------
+A3           1      64.755     0.271     8.770    0.922        0.916 
+A2           1      68.262     0.922     9.421    0.916        0.910 
+A4           1      83.408     4.335    12.834    0.885        0.878 
+A1           1     138.342    30.877    39.376    0.648        0.624 
+--------------------------------------------------------------------
+
+
+Variables Removed: 
+
+x A3 
+
+
+  Step 1 : AIC = 64.75459 
+ y ~ A1 + A2 + A4 
+
+--------------------------------------------------------------------
+Variable     DF      AIC      Sum Sq     RSS      R-Sq     Adj. R-Sq 
+--------------------------------------------------------------------
+A2           1      67.417     0.875     9.646    0.914        0.910 
+A4           1     102.257    10.869    19.640    0.824        0.817 
+A1           1     139.029    32.826    41.596    0.628        0.612 
+--------------------------------------------------------------------
+
+
+No more variables to be removed.
+
+Variables Removed: 
+
+x A3 
+
+
+Final Model Output 
+------------------
+
+                        Model Summary                         
+-------------------------------------------------------------
+R                       0.960       RMSE               0.441 
+R-Squared               0.922       Coef. Var          0.480 
+Adj. R-Squared          0.916       MSE                0.195 
+Pred R-Squared          0.911       MAE                0.347 
+-------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+
+                               ANOVA                                 
+--------------------------------------------------------------------
+               Sum of                                               
+              Squares        DF    Mean Square       F         Sig. 
+--------------------------------------------------------------------
+Regression    103.082         3         34.361    176.301    0.0000 
+Residual        8.770        45          0.195                      
+Total         111.852        48                                     
+--------------------------------------------------------------------
+
+                                   Parameter Estimates                                    
+-----------------------------------------------------------------------------------------
+      model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
+-----------------------------------------------------------------------------------------
+(Intercept)    93.627         0.846                 110.652    0.000    91.923    95.331 
+         A1    -0.094         0.007       -0.828    -12.978    0.000    -0.108    -0.079 
+         A2    -0.091         0.043       -0.126     -2.119    0.040    -0.177    -0.005 
+         A4     2.484         0.333        0.352      7.468    0.000     1.814     3.154 
+-----------------------------------------------------------------------------------------
+
+
+                   Backward Elimination Summary                   
+----------------------------------------------------------------
+Variable       AIC       RSS     Sum Sq      R-Sq      Adj. R-Sq 
+----------------------------------------------------------------
+Full Model    65.215    8.499    103.353    0.92402      0.91711 
+A3            64.755    8.770    103.082    0.92159      0.91636 
+----------------------------------------------------------------
+
+> 
+> ols_step_forward_aic(model1,details = TRUE)
+Forward Selection Method 
+------------------------
+
+Candidate Terms: 
+
+1 . A1 
+2 . A2 
+3 . A3 
+4 . A4 
+
+ Step 0: AIC = 183.4986 
+ y ~ 1 
+
+--------------------------------------------------------------------
+Variable     DF      AIC      Sum Sq     RSS      R-Sq     Adj. R-Sq 
+--------------------------------------------------------------------
+A1            1    103.142    91.022    20.831    0.814        0.810 
+A4            1    152.757    54.513    57.339    0.487        0.476 
+A3            1    156.542    49.909    61.944    0.446        0.434 
+A2            1    166.508    35.937    75.915    0.321        0.307 
+--------------------------------------------------------------------
+
+
++ A1 
+
+
+ Step 1 : AIC = 103.1421 
+ y ~ A1 
+
+--------------------------------------------------------------------
+Variable     DF      AIC      Sum Sq     RSS      R-Sq     Adj. R-Sq 
+--------------------------------------------------------------------
+A4            1     67.417    11.185     9.646    0.914        0.910 
+A3            1     85.856     6.778    14.053    0.874        0.869 
+A2            1    102.257     1.191    19.640    0.824        0.817 
+--------------------------------------------------------------------
+
++ A4 
+
+
+ Step 2 : AIC = 67.41689 
+ y ~ A1 + A4 
+
+------------------------------------------------------------------
+Variable     DF     AIC      Sum Sq     RSS     R-Sq     Adj. R-Sq 
+------------------------------------------------------------------
+A2            1    64.755     0.875    8.770    0.922        0.916 
+A3            1    68.262     0.225    9.421    0.916        0.910 
+------------------------------------------------------------------
+
++ A2 
+
+
+ Step 3 : AIC = 64.75459 
+ y ~ A1 + A4 + A2 
+
+------------------------------------------------------------------
+Variable     DF     AIC      Sum Sq     RSS     R-Sq     Adj. R-Sq 
+------------------------------------------------------------------
+A3            1    65.215     0.271    8.499    0.924        0.917 
+------------------------------------------------------------------
+
+
+No more variables to be added.
+
+Variables Entered: 
+
++ A1 
++ A4 
++ A2 
+
+
+Final Model Output 
+------------------
+
+                        Model Summary                         
+-------------------------------------------------------------
+R                       0.960       RMSE               0.441 
+R-Squared               0.922       Coef. Var          0.480 
+Adj. R-Squared          0.916       MSE                0.195 
+Pred R-Squared          0.911       MAE                0.347 
+-------------------------------------------------------------
+ RMSE: Root Mean Square Error 
+ MSE: Mean Square Error 
+ MAE: Mean Absolute Error 
+
+                               ANOVA                                 
+--------------------------------------------------------------------
+               Sum of                                               
+              Squares        DF    Mean Square       F         Sig. 
+--------------------------------------------------------------------
+Regression    103.082         3         34.361    176.301    0.0000 
+Residual        8.770        45          0.195                      
+Total         111.852        48                                     
+--------------------------------------------------------------------
+
+                                   Parameter Estimates                                    
+-----------------------------------------------------------------------------------------
+      model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
+-----------------------------------------------------------------------------------------
+(Intercept)    93.627         0.846                 110.652    0.000    91.923    95.331 
+         A1    -0.094         0.007       -0.828    -12.978    0.000    -0.108    -0.079 
+         A4     2.484         0.333        0.352      7.468    0.000     1.814     3.154 
+         A2    -0.091         0.043       -0.126     -2.119    0.040    -0.177    -0.005 
+-----------------------------------------------------------------------------------------
+
+                        Selection Summary                         
+-----------------------------------------------------------------
+Variable       AIC      Sum Sq      RSS       R-Sq      Adj. R-Sq 
+-----------------------------------------------------------------
+A1           103.142     91.022    20.831    0.81376      0.80980 
+A4            67.417    102.207     9.646    0.91376      0.91001 
+A2            64.755    103.082     8.770    0.92159      0.91636 
+-----------------------------------------------------------------
+> AIC1<-AIC(lm(y~A1,data = All_final1))
+> AIC2<-AIC(lm(y~A2,data = All_final1))
+> AIC3<-AIC(lm(y~A3,data = All_final1))
+> AIC4<-AIC(lm(y~A4,data = All_final1))
+> 
+> AIC12<-AIC(lm(y~A1+A2,data = All_final1))
+> AIC13<-AIC(lm(y~A1+A3,data = All_final1))
+> AIC14<-AIC(lm(y~A1+A4,data = All_final1))
+> AIC23<-AIC(lm(y~A2+A3,data = All_final1))
+> AIC24<-AIC(lm(y~A2+A4,data = All_final1))
+> AIC34<-AIC(lm(y~A3+A4,data = All_final1))
+> 
+> 
+> 
+> AIC123<-AIC(lm(y~A1+A2+A3,data = All_final1))
+> AIC124<-AIC(lm(y~A1+A2+A4,data = All_final1))
+> AIC134<-AIC(lm(y~A1+A3+A4,data = All_final1))
+> AIC234<-AIC(lm(y~A2+A3+A4,data = All_final1))
+> 
+> AIC1234<-AIC(lm(y~A1+A2+A3+A4,data = All_final1))
+> 
+> AIC_Vals<-c(AIC1, AIC2, AIC3, AIC4, AIC12, AIC13, AIC14, AIC23, AIC24, AIC34, AIC123, AIC124, AIC134, AIC234, AIC1234)
+> 
+> BIC1<-BIC(lm(y~A1,data = All_final1))
+> BIC2<-BIC(lm(y~A2,data = All_final1))
+> BIC3<-BIC(lm(y~A3,data = All_final1))
+> BIC4<-BIC(lm(y~A4,data = All_final1))
+> 
+> BIC12<-BIC(lm(y~A1+A2,data = All_final1))
+> BIC13<-BIC(lm(y~A1+A3,data = All_final1))
+> BIC14<-BIC(lm(y~A1+A4,data = All_final1))
+> BIC23<-BIC(lm(y~A2+A3,data = All_final1))
+> BIC24<-BIC(lm(y~A2+A4,data = All_final1))
+> BIC34<-BIC(lm(y~A3+A4,data = All_final1))
+> 
+> BIC123<-BIC(lm(y~A1+A2+A3,data = All_final1))
+> BIC124<-BIC(lm(y~A1+A2+A4,data = All_final1))
+> BIC134<-BIC(lm(y~A1+A3+A4,data = All_final1))
+> BIC234<-BIC(lm(y~A2+A3+A4,data = All_final1))
+> 
+> BIC1234<-BIC(lm(y~A1+A2+A3+A4,data = All_final1))
+> 
+> BIC_Vals<-c(BIC1, BIC2, BIC3, BIC4, BIC12, BIC13, BIC14, BIC23, BIC24, BIC34, BIC123, BIC124, BIC134, BIC234, BIC1234)
+> 
+> name<-c("1","2","3","4","12","13","14","23","24","34","123","124","134","234","1234")
+> AIC_BIC<-data.frame(name, AIC_Vals, BIC_Vals)
+> 
+> AIC_BIC
+   name  AIC_Vals  BIC_Vals
+1     1  76.81452  81.80520
+2     2 102.19071 107.18139
+3     3 103.19443 108.18512
+4     4  98.49484 103.48552
+5    12  76.68921  83.34346
+6    13  70.59674  77.25099
+7    14  56.49090  63.14515
+8    23 104.04409 110.69834
+9    24  98.69322 105.34746
+10   34  99.40205 106.05630
+11  123  70.15573  78.47353
+12  124  55.37124  63.68905
+13  134  57.02111  65.33892
+14  234  99.92149 108.23930
+15 1234  55.79865  65.78002
+> 
+> 
+> 
+> ####################################################--RESULTS---#######################################
+> 
+> #  based on R^2 we should choose a model with ( A1,A2,A4) , (A1,A3,A4) , (A1,A4)
+> 
+> #  based on  R^2_adj we should choose a model with (A1,A2,A4) , (A1,A3,A4) , (A1,A4)
+> 
+> # based on mallow cp we should choose a model wth (A1,A2,A4)
+> 
+> # based on AIC we should choose (A1,A2,A4)
+> 
+> # based on BIC we should choose (A1,A4)
+> 
+> #########################################################################################################
+> 
+> #-----finally from the results we have 3 models which are good ( with decreasing order of preference)
+> # they are model with  
+> # 1. regressors A1,A2,A4
+> # 2. regressors A1,A3,A4
+> # 3. regressors A1, A4
+> 
+> 
+> #------------------------------------------------------
+> M_1 <- lm(y~A1+A2+A4, data = OD_train)
+> summary(M_1)
+
+Call:
+lm(formula = y ~ A1 + A2 + A4, data = OD_train)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.94544 -0.24390 -0.01404  0.31689  0.85995 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 93.627134   0.846142 110.652  < 2e-16 ***
+A1          -0.093910   0.007236 -12.978  < 2e-16 ***
+A2          -0.090896   0.042887  -2.119   0.0396 *  
+A4           2.484316   0.332665   7.468 2.07e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.4415 on 45 degrees of freedom
+Multiple R-squared:  0.9216,	Adjusted R-squared:  0.9164 
+F-statistic: 176.3 on 3 and 45 DF,  p-value: < 2.2e-16
+
+> 
+> M_valid_1 <- lm(y~A1+A2+A4, data = OD_valid)
+> summary(M_valid_1)
+
+Call:
+lm(formula = y ~ A1 + A2 + A4, data = OD_valid)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.69226 -0.24812 -0.08887  0.08663  1.18038 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 94.228704   0.831163 113.370  < 2e-16 ***
+A1          -0.091167   0.007744 -11.773 1.44e-12 ***
+A2          -0.196932   0.053712  -3.666 0.000982 ***
+A4           2.088479   0.357641   5.840 2.48e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.4522 on 29 degrees of freedom
+Multiple R-squared:  0.8734,	Adjusted R-squared:  0.8603 
+F-statistic: 66.67 on 3 and 29 DF,  p-value: 4.015e-13
+
+> 
+> #-------------------------------------------------------
+> M_2 <- lm(y~A1+A3+A4, data = OD_train)
+> summary(M_2)
+
+Call:
+lm(formula = y ~ A1 + A3 + A4, data = OD_train)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-1.07752 -0.30939 -0.04826  0.31272  0.99808 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 94.305555   1.650529  57.137  < 2e-16 ***
+A1          -0.081963   0.005748 -14.258  < 2e-16 ***
+A3          -0.019442   0.018769  -1.036    0.306    
+A4           2.192105   0.466059   4.703 2.45e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.4576 on 45 degrees of freedom
+Multiple R-squared:  0.9158,	Adjusted R-squared:  0.9102 
+F-statistic: 163.1 on 3 and 45 DF,  p-value: < 2.2e-16
+
+> 
+> M_valid_2 <- lm(y~A1+A3+A4, data = OD_valid)
+> summary(M_valid_2)
+
+Call:
+lm(formula = y ~ A1 + A3 + A4, data = OD_valid)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.95102 -0.28898  0.00282  0.25551  0.99510 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 94.423376   2.153024  43.856  < 2e-16 ***
+A1          -0.080037   0.009456  -8.465 2.51e-09 ***
+A3          -0.018560   0.026876  -0.691  0.49533    
+A4           1.999137   0.583565   3.426  0.00185 ** 
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.5426 on 29 degrees of freedom
+Multiple R-squared:  0.8177,	Adjusted R-squared:  0.7988 
+F-statistic: 43.35 on 3 and 29 DF,  p-value: 7.692e-11
+
+> #------------------------------------------------------
+> M_3 <- lm(y~A1+A4, data = OD_train)
+> summary(M_3)
+
+Call:
+lm(formula = y ~ A1 + A4, data = OD_train)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-1.02814 -0.27539 -0.04088  0.33228  0.91975 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 92.797453   0.778095 119.262  < 2e-16 ***
+A1          -0.083564   0.005541 -15.081  < 2e-16 ***
+A4           2.517349   0.344682   7.303  3.2e-09 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.4579 on 46 degrees of freedom
+Multiple R-squared:  0.9138,	Adjusted R-squared:   0.91 
+F-statistic: 243.7 on 2 and 46 DF,  p-value: < 2.2e-16
+
+> 
+> M_valid_3 <- lm(y~A1+A4, data = OD_valid)
+> summary(M_valid_3)
+
+Call:
+lm(formula = y ~ A1 + A4, data = OD_valid)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.99325 -0.22458 -0.03597  0.20899  0.95667 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 93.080393   0.915740 101.645  < 2e-16 ***
+A1          -0.082365   0.008757  -9.406 1.87e-10 ***
+A4           2.275472   0.421042   5.404 7.44e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.5378 on 30 degrees of freedom
+Multiple R-squared:  0.8147,	Adjusted R-squared:  0.8023 
+F-statistic: 65.94 on 2 and 30 DF,  p-value: 1.045e-11
+
+> 
+> # Comparing all the values of R^2, R^2_adj and residual error the best model to be taken is the one which includes the regressors 
+> # A1 and A4
+> 
+> # so octane rating depends significantly on amount of material 1 and amount of material 4
+> 
+> 
+> ##----------Weighted least squares-----------------------------------------------
+> 
+> 
+> 
+> Ix<-as.matrix(All_final1)
+> 
+> Iy<-Ix[,5]
+> 
+> Ix1<-IX[,1]
+> Ix2<-IX[,2]
+> Ix3<-IX[,3]
+> Ix4<-IX[,4]
+> 
+> # weighted 
+> xw<-1/Ix1
+> modwet_final<-lm(Iy~Ix1+Ix4, weights = xw)
+> 
+> summary(modwet_final)
+
+Call:
+lm(formula = Iy ~ Ix1 + Ix4, weights = xw)
+
+Weighted Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.100373 -0.029653  0.008346  0.029534  0.122593 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 93.36976    1.01922  91.609  < 2e-16 ***
+Ix1         -0.09982    0.01163  -8.583 3.12e-10 ***
+Ix4          2.78891    0.53695   5.194 8.30e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.0594 on 36 degrees of freedom
+Multiple R-squared:   0.71,	Adjusted R-squared:  0.6939 
+F-statistic: 44.07 on 2 and 36 DF,  p-value: 2.103e-10
+
+> res1f<-residuals(modwet_final)
+> py1f<-predict(modwet_final)
+> plot(py1f,res1f)
